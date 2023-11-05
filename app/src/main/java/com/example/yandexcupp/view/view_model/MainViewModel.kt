@@ -119,7 +119,7 @@ class MainViewModel @Inject constructor(
     }
 
     fun onEnd(sample: Sample?) {
-        trackPlayer.stopAllTracks()
+        stopAllTracks()
         if (curSample.value != null) {
             curSample.update { null }
         }
