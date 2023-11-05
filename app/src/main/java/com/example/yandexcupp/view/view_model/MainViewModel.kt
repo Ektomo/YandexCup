@@ -20,13 +20,11 @@ import com.example.yandexcupp.data.SampleEnum
 import com.example.yandexcupp.data.SampleLayer
 import com.example.yandexcupp.data.dataStore
 import com.example.yandexcupp.player.MultiTrackPlayer
-import com.example.yandexcupp.player.Recorder
 import com.example.yandexcupp.player.TrackPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -57,6 +55,7 @@ class MainViewModel @Inject constructor(
     val curRate = mutableFloatStateOf(1f)
     val curVolume = mutableFloatStateOf(0.5f)
     val finalTrack = MutableStateFlow("")
+    val reco = MutableStateFlow(1)
     private var myJob: Job? = null
 
     private val _amplitude = MutableStateFlow(0f)
@@ -126,8 +125,8 @@ class MainViewModel @Inject constructor(
         }
         if (sample != null) {
             val sampleLayer = SampleLayer(sample.sampleEnum, path = sample.path)
+            sampleLayer.isPlay = true
             curLayer.update { sampleLayer }
-
             trackPlayer.loadTrack(sampleLayer.id, sampleLayer.path) {
                 trackPlayer.playTrack(sampleLayer.id, sampleLayer.volume, sampleLayer.rate)
                 trackPlayer.visualize { value -> _amplitude.update { value } }
@@ -151,9 +150,10 @@ class MainViewModel @Inject constructor(
     fun muteLayer(layer: Layer, isMute: Boolean) {
         val findingLayer = layers.firstOrNull { it.id == layer.id }
         if (findingLayer != null) {
-            findingLayer.volume = if (isMute) 0f else 1f
+            findingLayer.isMute = isMute
         }
-        trackPlayer.setVolume(layer.id, if (isMute) 0f else 1f)
+        trackPlayer.setVolume(layer.id, if (isMute) 0f else layer.volume)
+        reco.update { it+1}
     }
 
 
@@ -170,8 +170,10 @@ class MainViewModel @Inject constructor(
         curSample.update { null }
         trackPlayer.stopAllTracks()
         layers.forEach { layer ->
-            trackPlayer.playTrack(layer.id, layer.volume, layer.rate)
+            layer.isPlay = true
+            trackPlayer.playTrack(layer.id, if (layer.isMute) 0f else layer.volume, layer.rate)
         }
+        reco.update { it+1}
         trackPlayer.visualize { value ->
             _amplitude.update { value }
         }
@@ -198,7 +200,8 @@ class MainViewModel @Inject constructor(
         curLayer.update { null }
         curSample.update { null }
         trackPlayer.stopAllTracks()
-
+        layers.forEach { it.isPlay = false }
+        reco.update { it+1}
         trackPlayer.stopVisualise()
         _amplitude.update { 0f }
     }
@@ -224,9 +227,13 @@ class MainViewModel @Inject constructor(
 
         if (findingLayer != null) {
             if (!isPlay) {
+                layer.isPlay = false
                 trackPlayer.stopTrack(layer.id)
+                reco.update { it+1}
             } else {
-                trackPlayer.playTrack(findingLayer.id, findingLayer.volume, findingLayer.rate)
+                layer.isPlay = true
+                trackPlayer.playTrack(layer.id, if (layer.isMute) 0f else layer.volume, layer.rate)
+                reco.update { it+1}
 //                trackPlayer.visualize { value -> _amplitude.update { value } }
             }
         }
@@ -248,7 +255,7 @@ class MainViewModel @Inject constructor(
 
             layers.remove(findingLayer)
 
-            if (layers.isEmpty()){
+            if (layers.isEmpty()) {
                 trackPlayer.stopVisualise()
                 _amplitude.update { 0f }
             }
@@ -262,9 +269,11 @@ class MainViewModel @Inject constructor(
             stopAllTracks()
             curRate.floatValue = findingLayer.rate
             curVolume.floatValue = findingLayer.volume
+            layer.isPlay = true
             curLayer.update { layer }
+            findingLayer.isMute = false
             trackPlayer.playTrack(findingLayer.id, findingLayer.volume, findingLayer.rate)
-            trackPlayer.visualize { value -> _amplitude.update { value }  }
+            trackPlayer.visualize { value -> _amplitude.update { value } }
         }
     }
 
@@ -275,23 +284,25 @@ class MainViewModel @Inject constructor(
 //        trackPlayer.stopVisualise()
         trackPlayer.startMic({
             _state.update { ViewStateClass.Loading }
-        }, {
+        }, { file ->
             try {
 
-                val newLayer = MicLayer(SampleEnum.Mic, it.absolutePath)
+                val newLayer = MicLayer(SampleEnum.Mic, file.absolutePath)
 
-                trackPlayer.loadTrackFromFile(newLayer.id, it) {
+                trackPlayer.loadTrackFromFile(newLayer.id, file) {
                     trackPlayer.playTrack(newLayer.id, newLayer.volume, newLayer.rate)
                     trackPlayer.visualize { float -> _amplitude.update { float } }
                     layers.add(newLayer)
+                    newLayer.isPlay = true
                     curLayer.update { newLayer }
+                    reco.update { it+1}
                     _state.update { ViewStateClass.Data(dataStore) }
                 }
 //                _amplitude.update { 0f }
             } catch (e: Exception) {
                 _state.update { ViewStateClass.Error(e) }
             }
-        }){value ->
+        }) { value ->
             _amplitude.update { value }
         }
     }
@@ -310,7 +321,7 @@ class MainViewModel @Inject constructor(
             FinalTrack.path = file.absolutePath
             finalTrack.update { file.absolutePath }
             _state.update { ViewStateClass.Data(dataStore) }
-        }){ value ->
+        }) { value ->
             _amplitude.update { value }
         }
     }
@@ -320,8 +331,6 @@ class MainViewModel @Inject constructor(
         trackPlayer.stopRecord()
         _amplitude.update { 0f }
     }
-
-
 
 
     fun defaultPlayTrack(id: String) {
@@ -396,7 +405,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun release(){
+    fun release() {
         trackPlayer.release()
     }
 

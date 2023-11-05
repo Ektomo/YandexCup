@@ -24,6 +24,8 @@ interface Layer{
     val id: String
     var volume: Float
     var rate: Float
+    var isMute: Boolean
+    var isPlay: Boolean
 
 }
 
@@ -34,7 +36,8 @@ data class SampleLayer(
     override val id = sampleEnum.name + Counter.getId()
     override var volume: Float = 0.5f
     override var rate: Float = 1f
-
+    override var isMute: Boolean = false
+    override var isPlay: Boolean = false
 }
 
 data class MicLayer(
@@ -44,7 +47,8 @@ data class MicLayer(
     override val id = sampleEnum.name + Counter.getId()
     override var volume: Float = 0.5f
     override var rate: Float = 1f
-
+    override var isMute: Boolean = false
+    override var isPlay: Boolean = false
 }
 
 

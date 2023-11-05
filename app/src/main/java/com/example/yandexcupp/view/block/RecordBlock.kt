@@ -121,6 +121,8 @@ fun BoxWithConstraintsScope.RecordBlock(
         if (it) Color(0xFFA7DA10) else Color.White
     }
 
+    val reco by viewModel.reco.collectAsState()
+
 
     val isFinalTrack by viewModel.finalTrack.collectAsState()
 
@@ -163,11 +165,11 @@ fun BoxWithConstraintsScope.RecordBlock(
 
                 layerList.forEach { layer ->
 
-                    var isPlaying by remember(curLayer) {
-                        mutableStateOf(curLayer != null && curLayer?.id == layer.id)
+                    var isPlaying by remember(reco) {
+                        mutableStateOf(layer.isPlay)
                     }
-                    var isMute by remember {
-                        mutableStateOf(layer.volume == 0f)
+                    var isMute by remember(reco) {
+                        mutableStateOf(layer.isMute)
                     }
 
 
@@ -254,9 +256,14 @@ fun BoxWithConstraintsScope.RecordBlock(
 
 
 
-        Column(Modifier.fillMaxWidth().align(BottomCenter)) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .align(BottomCenter)) {
 
-            Canvas(modifier = Modifier.fillMaxWidth().height(60.dp)) {
+            Canvas(modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp)) {
                 val lineCount = 50
                 val lineSpacing = size.width / (lineCount - 1)
                 val waveHeight = (amplitude / Short.MAX_VALUE.toFloat()) * size.height / 2
@@ -332,6 +339,7 @@ fun BoxWithConstraintsScope.RecordBlock(
                     FilledIconButton(
                         onClick = {
                             if (!recAll) {
+                                onStopAll(true)
                                 onPlayAll(true)
                             } else onStopAll(true)
                             recAll = !recAll
@@ -349,10 +357,12 @@ fun BoxWithConstraintsScope.RecordBlock(
                     Spacer(modifier = Modifier.padding(horizontal = 1.dp))
                     FilledIconButton(
                         onClick = {
-                            if (!playAll) {
-                                onPlayAll(false)
-                            } else onStopAll(false)
-                            playAll = !playAll
+                            if (!recAll) {
+                                if (!playAll) {
+                                    onPlayAll(false)
+                                } else onStopAll(false)
+                                playAll = !playAll
+                            }
                         },
                         shape = RoundedCornerShape(4.dp),
                         colors = IconButtonDefaults.iconButtonColors(containerColor = Color.White)

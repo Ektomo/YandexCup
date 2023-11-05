@@ -179,38 +179,40 @@ class VisRecorder(private val context: Context) {
 
 
     fun visualize(onValue: (Float) -> Unit) {
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.RECORD_AUDIO
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-        recorder = AudioRecord(
-            MediaRecorder.AudioSource.MIC,
-            44100,
-            AudioFormat.CHANNEL_IN_STEREO,
-            AudioFormat.ENCODING_PCM_16BIT,
-            bufferSize
-        )
+        if (recorder == null) {
+            if (ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.RECORD_AUDIO
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return
+            }
+            recorder = AudioRecord(
+                MediaRecorder.AudioSource.MIC,
+                44100,
+                AudioFormat.CHANNEL_IN_STEREO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                bufferSize
+            )
 
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
+            byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
 
-        recordingJob = CoroutineScope(Dispatchers.Default).launch {
-            recorder?.startRecording()
-            while (isActive) {
-                val readResult = recorder?.read(shortBuffer, 0, shortBuffer.size) ?: 0
-                if (readResult > 0) {
-                    onValue(abs(shortBuffer.maxOrNull()?.toFloat() ?: 0f))
+            recordingJob = CoroutineScope(Dispatchers.Default).launch {
+                recorder?.startRecording()
+                while (isActive) {
+                    val readResult = recorder?.read(shortBuffer, 0, shortBuffer.size) ?: 0
+                    if (readResult > 0) {
+                        onValue(abs(shortBuffer.maxOrNull()?.toFloat() ?: 0f))
+                    }
                 }
+
+                recorder?.stop()
+                recorder?.release()
+                recorder = null
+
             }
 
-            recorder?.stop()
-            recorder?.release()
-            recorder = null
-
         }
-
     }
 
     fun stopVisualize() {

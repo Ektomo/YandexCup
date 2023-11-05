@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.yandexcupp"
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.example.yandexcupp"
@@ -15,7 +15,7 @@ android {
         targetSdk = 33
         versionCode = 1
         versionName = "1.0"
-        compileSdkPreview = "UpsideDownCake"
+//        compileSdkPreview = "UpsideDownCake"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -25,7 +25,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
