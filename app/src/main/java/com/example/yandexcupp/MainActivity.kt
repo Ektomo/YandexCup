@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -86,33 +87,32 @@ class MainActivity : ComponentActivity() {
             val vm = hiltViewModel<MainViewModel>()
             val state by vm.state.collectAsState()
 
-            if (allPermissionsGranted) {
 
-                val gradient =
-                    Brush.verticalGradient(
-                        listOf(
-                            Color.Black,
-                            Color(0xFF5A50E1),
+            val gradient =
+                Brush.verticalGradient(
+                    listOf(
+                        Color.Black,
+                        Color(0xFF5A50E1),
 
-                            ),
-                    )
+                        ),
+                )
 
 //            val currentSample: Sample? by vm.curSample.collectAsState()
-                val curRate by remember {
-                    vm.curRate
-                }
-                val curVolume by remember {
-                    vm.curVolume
-                }
-                var showSliders by remember {
-                    mutableStateOf(true)
-                }
+            val curRate by remember {
+                vm.curRate
+            }
+            val curVolume by remember {
+                vm.curVolume
+            }
+            var showSliders by remember {
+                mutableStateOf(true)
+            }
 
-                val finalTrack by vm.finalTrack.collectAsState()
+            val finalTrack by vm.finalTrack.collectAsState()
 
-                var showDialog by remember(finalTrack) {
-                    mutableStateOf(finalTrack.isNotEmpty())
-                }
+            var showDialog by remember(finalTrack) {
+                mutableStateOf(finalTrack.isNotEmpty())
+            }
 
 //            LaunchedEffect(key1 = currentSample) {
 //                if (currentSample != null) {
@@ -120,22 +120,22 @@ class MainActivity : ComponentActivity() {
 //                }
 //            }
 
-                DisposableEffect(key1 = Unit) {
-                    onDispose {
-                        vm.release()
-                    }
+            DisposableEffect(key1 = Unit) {
+                onDispose {
+                    vm.release()
                 }
+            }
 
-                val context = LocalContext.current
+            val context = LocalContext.current
 
 
-                YandexCupPTheme {
-                    // A surface container using the 'background' color from the theme
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background
-                    ) {
-
+            YandexCupPTheme {
+                // A surface container using the 'background' color from the theme
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    if (allPermissionsGranted) {
                         if (showDialog) {
                             DialogYourChoice(
                                 onDismissRequest = { showDialog = false },
@@ -271,14 +271,30 @@ class MainActivity : ComponentActivity() {
                             }
 
                         }
+
+                    } else {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text("Необходимо предоставить разрешения для работы приложения")
+                                Button(onClick = { recordAudioLauncher.launch(permissions) }) {
+                                    Text("Предоставить разрешения")
+                                }
+                            }
+                        }
+
                     }
                 }
-            } else {
-                Text("Необходимо предоставить разрешения для работы приложения")
-                Button(onClick = { recordAudioLauncher.launch(permissions) }) {
-                    Text("Предоставить разрешения")
-                }
             }
+
         }
     }
 }
@@ -319,9 +335,11 @@ fun DialogYourChoice(
                     fontFamily = ysFontFamily,
                 )
             }
-            Button(modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 2.dp), onClick = onSave) {
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp), onClick = onSave
+            ) {
                 Text(
                     text = "Сохранить в загрузки",
                     fontFamily = ysFontFamily,
