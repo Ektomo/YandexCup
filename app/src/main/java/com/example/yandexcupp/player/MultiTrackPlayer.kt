@@ -15,12 +15,12 @@ import java.io.File
 import java.io.FileInputStream
 
 class MultiTrackPlayer(val context: Context) {
-    private val tracks = mutableMapOf<Int, AudioTrack>()
-    private val trackData = mutableMapOf<Int, ByteArray>()
-    private val playingTracks = mutableMapOf<Int, Boolean>()
+    private val tracks = mutableMapOf<String, AudioPlayer>()
+//    private val trackData = mutableMapOf<Int, ByteArray>()
+//    private val playingTracks = mutableMapOf<Int, Boolean>()
     private var isRecording = false
     private var recordFile: String? = null
-    private val jobList = mutableMapOf<Int,Job>()
+//    private val jobList = mutableMapOf<Int,Job>()
     private val scope = CoroutineScope(Dispatchers.Default)
 
 
@@ -41,90 +41,113 @@ class MultiTrackPlayer(val context: Context) {
         AudioFormat.ENCODING_PCM_16BIT
     )
 
-    fun loadTrack(resId: Int) {
-        if(tracks[resId] == null) {
-            val fd = context.resources.openRawResourceFd(resId)
+    fun loadTrack(id: String, resId: Int, onComplete: () -> Unit) {
+        if(tracks[id] == null) {
+//            val fd = context.resources.openRawResourceFd(resId)
 
-            val audioData = ByteArray(fd.length.toInt())
-            val fis = FileInputStream(fd.fileDescriptor)
-            val offset = fd.startOffset
-            fis.skip(offset)
-            fis.read(audioData, 0, audioData.size)
-            fis.close()
-
-            val audioTrack = AudioTrack.Builder()
-                .setAudioAttributes(audioAttributes)
-                .setAudioFormat(audioFormat)
-                .setBufferSizeInBytes(minBufferSize)
-                .setTransferMode(AudioTrack.MODE_STREAM)
-                .build()
+//            val audioData = ByteArray(fd.length.toInt())
+//            val fis = FileInputStream(fd.fileDescriptor)
+//            val offset = fd.startOffset
+//            fis.skip(offset)
+//            fis.read(audioData, 0, audioData.size)
+//            fis.close()
+//
+//            val audioTrack = AudioTrack.Builder()
+//                .setAudioAttributes(audioAttributes)
+//                .setAudioFormat(audioFormat)
+//                .setBufferSizeInBytes(minBufferSize)
+//                .setTransferMode(AudioTrack.MODE_STREAM)
+//                .build()
 
 
 //            audioTrack.write(audioData, 0, audioData.size)
 
-            trackData[resId] = audioData
-            tracks[resId] = audioTrack
-            playingTracks[resId] = false
+//            trackData[resId] = audioData
+            val track = AudioPlayer(context)
+            track.loadFromResource(resId){
+                tracks[id] = track
+                onComplete()
+            }
+//            playingTracks[resId] = false
         }
     }
 
-    fun loadTrackFromFile(filePath: String) {
+    fun loadTrackFromFile(id: String, filePath: String, onComplete: () -> Unit) {
         val file = File(filePath)
         if (file.exists()) {
-            val fis = FileInputStream(file)
+//            val fis = FileInputStream(file)
+//
+//            val audioData = ByteArray(file.length().toInt())
+//            fis.read(audioData)
+//            fis.close()
+//
+//            val audioTrack = AudioTrack.Builder()
+//                .setAudioAttributes(audioAttributes)
+//                .setAudioFormat(audioFormat)
+//                .setBufferSizeInBytes(minBufferSize)
+//                .setTransferMode(AudioTrack.MODE_STREAM)
+//                .build()
+//
+//            audioTrack.write(audioData, 0, audioData.size)
+            val track = AudioPlayer(context)
+            track.loadFromFile(filePath){
+                tracks[id] = track
+                onComplete()
+            }
 
-            val audioData = ByteArray(file.length().toInt())
-            fis.read(audioData)
-            fis.close()
-
-            val audioTrack = AudioTrack.Builder()
-                .setAudioAttributes(audioAttributes)
-                .setAudioFormat(audioFormat)
-                .setBufferSizeInBytes(minBufferSize)
-                .setTransferMode(AudioTrack.MODE_STREAM)
-                .build()
-
-            audioTrack.write(audioData, 0, audioData.size)
-            tracks[file.hashCode()] = audioTrack
         }
     }
 
-    fun loadTracks(resources: List<Int>) {
-        resources.forEach { resId ->
-            loadTrack(resId)
-        }
-    }
-
-
-
-    fun playTrack(id: Int) {
-
-
-        val audioTrack = tracks[id]
-        audioTrack?.play()
-        val job = scope.launch {
-            val audioData = trackData[id]
-            while (isActive){
-                audioTrack?.write(audioData!!, 0, audioData.size)
-                audioTrack?.play()
+    fun loadTracks(resources: List<Pair<String,Int>>, onComplete: (Int) -> Unit) {
+        var count = 0
+        resources.forEach { (id,resId) ->
+            loadTrack(id,resId){
+               count += 1
             }
         }
-        jobList[id] = job
+        onComplete(count)
     }
 
-    fun stopTrack(id: Int) {
-        jobList[id]?.cancel()
+
+
+    fun playTrack(id: String, volume: Float, rate: Int) {
+        val audioTrack = tracks[id]
+        audioTrack?.playSample()
+        audioTrack?.setVolume(volume)
+        audioTrack?.setPlaybackRate(rate)
+//        val job = scope.launch {
+//            val audioData = trackData[id]
+//            while (isActive){
+//                audioTrack?.write(audioData!!, 0, audioData.size)
+//                audioTrack?.play()
+//            }
+//        }
+//        jobList[id] = job
+    }
+
+    fun stopTrack(id: String) {
+//        jobList[id]?.cancel()
         tracks[id]?.stop()
-        playingTracks[id] = false
+//        playingTracks[id] = false
 //        tracks[id]?.reloadStaticData() // Если вы хотите начать воспроизведение сначала
     }
 
-    fun setVolume(id: Int, volume: Float) {
+    fun stopAllTracks(){
+        tracks.forEach{ (k,v) ->
+            stopTrack(k)
+        }
+    }
+
+    fun setVolume(id: String, volume: Float) {
         tracks[id]?.setVolume(volume)
     }
 
-    fun setPlaybackRate(id: Int, rate: Int) {
-        tracks[id]?.playbackRate = rate
+    fun setPlaybackRate(id: String, rate: Int) {
+        tracks[id]?.setPlaybackRate(rate)
+    }
+
+    fun setInterval(id: String, rate: Long){
+        tracks[id]?.setRepeatInterval(rate)
     }
 
 }
@@ -160,3 +183,5 @@ class MultiTrackPlayer(val context: Context) {
 //        const val SAMPLE_RATE = 44100
 //    }
 //}
+
+

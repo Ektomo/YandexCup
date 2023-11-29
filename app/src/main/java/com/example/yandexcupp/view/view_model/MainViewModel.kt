@@ -89,12 +89,14 @@ class MainViewModel @Inject constructor(
         _state.update { ViewStateClass.Loading }
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                multiTrackPlayer.loadTracks(dataStore.map { it.path })
+                multiTrackPlayer.loadTracks(dataStore.map { it.id to it.path }){
+                    _state.update { ViewStateClass.Data(dataStore) }
+                }
 //                multiTrackPlayer.loadingAllProcess.collect {
 //                    if (it.loading) {
 //                        _state.update { ViewStateClass.Loading }
 //                    } else {
-                _state.update { ViewStateClass.Data(dataStore) }
+
 //                    }
 //                }
             } catch (e: Exception) {
@@ -131,6 +133,10 @@ class MainViewModel @Inject constructor(
                 trackPlayer.playTrack(sampleLayer.id, sampleLayer.volume, sampleLayer.rate)
                 trackPlayer.visualize { value -> _amplitude.update { value } }
             }
+//            trackPlayer.loadTrack(sampleLayer.id, sampleLayer.path) {
+//                trackPlayer.playTrack(sampleLayer.id, sampleLayer.volume, sampleLayer.rate)
+//                trackPlayer.visualize { value -> _amplitude.update { value } }
+//            }
 
             layers.add(sampleLayer)
 
