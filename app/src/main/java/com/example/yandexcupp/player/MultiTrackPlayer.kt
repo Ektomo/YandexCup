@@ -64,10 +64,12 @@ class MultiTrackPlayer(val context: Context) {
 
 //            trackData[resId] = audioData
             val track = AudioPlayer(context)
-            track.loadFromResource(resId){
-                tracks[id] = track
-                onComplete()
-            }
+//            track.loadFromResource(resId){
+//                tracks[id] = track
+//                onComplete()
+//            }
+            track.loadAndPlayFromResource(resId)
+            tracks[id] = track
 //            playingTracks[resId] = false
         }
     }
@@ -112,7 +114,8 @@ class MultiTrackPlayer(val context: Context) {
 
     fun playTrack(id: String, volume: Float, rate: Int) {
         val audioTrack = tracks[id]
-        audioTrack?.playSample()
+
+//        audioTrack?.playSample()
         audioTrack?.setVolume(volume)
         audioTrack?.setPlaybackRate(rate)
 //        val job = scope.launch {

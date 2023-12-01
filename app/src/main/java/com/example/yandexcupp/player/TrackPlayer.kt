@@ -1,14 +1,17 @@
 package com.example.yandexcupp.player
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.SoundPool
 import androidx.core.content.FileProvider
 import com.example.yandexcupp.data.Sample
+import com.example.yandexcupp.data.dataStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import java.io.File
 import java.io.IOException
+
 
 data class TrackPlayerProcess(
     val loading: Boolean,
@@ -18,9 +21,32 @@ class TrackPlayer(val context: Context, val maxStreams: Int) {
 
     private val recorder = Recorder(context)
     private val visRecorder = VisRecorder(context)
-    private var soundPool: SoundPool = SoundPool.Builder()
-        .setMaxStreams(maxStreams)
-        .build()
+    private lateinit var soundPool: SoundPool
+
+    init {
+        buildSoundPool(maxStreams)
+    }
+
+    private fun buildSoundPool(streams: Int) {
+        if (this::soundPool.isInitialized){
+            soundPool.release()
+        }
+        soundPool = SoundPool.Builder()
+            .setMaxStreams(streams)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+            .build()
+    }
+
+    fun changeMaxStreams(newMaxStreams: Int) {
+        buildSoundPool(newMaxStreams)
+        loadAllTracks(dataStore)
+    }
+
     private var mediaPlayerMap = mutableMapOf<String, MediaPlayer>()
 
     private val soundIds = mutableMapOf<String, Int>()

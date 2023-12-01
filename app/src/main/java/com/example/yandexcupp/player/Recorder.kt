@@ -197,20 +197,22 @@ class VisRecorder(private val context: Context) {
 
             byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
 
-            recordingJob = CoroutineScope(Dispatchers.Default).launch {
-                recorder?.startRecording()
-                while (isActive) {
-                    val readResult = recorder?.read(shortBuffer, 0, shortBuffer.size) ?: 0
-                    if (readResult > 0) {
-                        onValue(abs(shortBuffer.maxOrNull()?.toFloat() ?: 0f))
-                    }
+        }
+//        recordingJob?.cancel()
+        recordingJob = CoroutineScope(Dispatchers.Default).launch {
+
+            recorder?.startRecording()
+
+            while (isActive) {
+                val readResult = recorder?.read(shortBuffer, 0, shortBuffer.size) ?: 0
+                if (readResult > 0) {
+                    onValue(abs(shortBuffer.maxOrNull()?.toFloat() ?: 0f))
                 }
-
-                recorder?.stop()
-                recorder?.release()
-                recorder = null
-
             }
+
+            recorder?.stop()
+            recorder?.release()
+            recorder = null
 
         }
     }

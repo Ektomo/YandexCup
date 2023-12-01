@@ -135,162 +135,163 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    if (allPermissionsGranted) {
-                        if (showDialog) {
-                            DialogYourChoice(
-                                onDismissRequest = { showDialog = false },
-                                onShare = {
+                    Crossfade (allPermissionsGranted, label = "") {
+                        if (it) {
+                            if (showDialog) {
+                                DialogYourChoice(
+                                    onDismissRequest = { showDialog = false },
+                                    onShare = {
+                                        showDialog = false
+                                        vm.shareFile(context)
+
+                                    },
+                                    onSave = {
+                                        showDialog = false
+                                        vm.saveToDownload(context = context)
+
+                                    },
+                                    onDelete = {
+                                        vm.deleteFinalTrack()
+                                    }) {
                                     showDialog = false
-                                    vm.shareFile(context)
-
-                                },
-                                onSave = {
-                                    showDialog = false
-                                    vm.saveToDownload(context = context)
-
-                                },
-                                onDelete = {
-                                    vm.deleteFinalTrack()
-                                }) {
-                                showDialog = false
-                            }
-                        }
-
-                        Crossfade(targetState = state, label = "") { curSt ->
-                            when (curSt) {
-                                ViewStateClass.Loading -> LoadingView()
-                                is ViewStateClass.Error -> Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(text = curSt.e.message ?: "Неизвестная ошибка")
                                 }
+                            }
 
-                                is ViewStateClass.Data -> {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(Color.Black)
-                                            .padding(12.dp)
+                            Crossfade(targetState = state, label = "") { curSt ->
+                                when (curSt) {
+                                    ViewStateClass.Loading -> LoadingView()
+                                    is ViewStateClass.Error -> Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
                                     ) {
+                                        Text(text = curSt.e.message ?: "Неизвестная ошибка")
+                                    }
 
-                                        Spacer(modifier = Modifier.weight(2f))
-
-                                        Box(
+                                    is ViewStateClass.Data -> {
+                                        Column(
                                             modifier = Modifier
-                                                .weight(8f)
-                                                .fillMaxWidth()
-                                                .background(gradient)
+                                                .fillMaxSize()
+                                                .background(Color.Black)
+                                                .padding(12.dp)
                                         ) {
-                                            if (showSliders) {
-                                                CustomVerticalSlider(
-                                                    modifier = Modifier
-                                                        .fillMaxHeight()
-                                                        .padding(vertical = 12.dp),
-                                                    curVolume
-                                                ) { value ->
-                                                    vm.setVolume(value)
 
-                                                }
-                                                CustomHorizontalSlider(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .align(Alignment.BottomCenter)
-                                                        .padding(start = 12.dp, end = 2.dp),
-                                                    curRate
-                                                ) { value ->
-                                                    vm.setRate(value)
+                                            Spacer(modifier = Modifier.weight(2f))
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .weight(8f)
+                                                    .fillMaxWidth()
+                                                    .background(gradient)
+                                            ) {
+                                                if (showSliders) {
+                                                    CustomVerticalSlider(
+                                                        modifier = Modifier
+                                                            .fillMaxHeight()
+                                                            .padding(vertical = 12.dp),
+                                                        curVolume
+                                                    ) { value ->
+                                                        vm.setVolume(value)
+
+                                                    }
+                                                    CustomHorizontalSlider(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .align(Alignment.BottomCenter)
+                                                            .padding(start = 12.dp, end = 2.dp),
+                                                        curRate
+                                                    ) { value ->
+                                                        vm.setRate(value)
+                                                    }
                                                 }
                                             }
+                                            Spacer(modifier = Modifier.weight(2f))
                                         }
-                                        Spacer(modifier = Modifier.weight(2f))
-                                    }
-                                    Box(modifier = Modifier.fillMaxWidth()) {
-                                        RowButtons(modifier = Modifier.fillMaxWidth(),
-                                            onEnd = { sample ->
-                                                vm.onEnd(sample)
-                                            }, onInput = { sample ->
-                                                vm.onInput(sample)
-                                            })
+                                        Box(modifier = Modifier.fillMaxWidth()) {
+                                            RowButtons(modifier = Modifier.fillMaxWidth(),
+                                                onEnd = { sample ->
+                                                    vm.onEnd(sample)
+                                                }, onInput = { sample ->
+                                                    vm.onInput(sample)
+                                                })
+                                        }
+
+                                        BoxWithConstraints(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(12.dp)
+                                        ) {
+                                            RecordBlock(
+                                                vm,
+                                                onExpand = {
+                                                    showSliders = !it
+                                                },
+                                                onMuteLayerBtn = { layer, isMute ->
+                                                    vm.muteLayer(layer, isMute)
+                                                },
+                                                onPlayLayerBtn = { layer, isPlay ->
+                                                    vm.pausePlayLayer(layer, isPlay)
+                                                },
+                                                onDeleteLayer = {
+                                                    vm.deleteLayer(it)
+                                                },
+                                                onSelectLayer = {
+                                                    vm.selectLayer(it)
+                                                },
+                                                onPlayAll = { isRecord ->
+                                                    showSliders = false
+                                                    if (isRecord) {
+                                                        vm.playAllWithRecord()
+                                                    } else {
+                                                        vm.playAllLayers()
+                                                    }
+                                                },
+                                                onStopAll = { isRecord ->
+                                                    showSliders = true
+                                                    if (isRecord) {
+                                                        vm.stopAllWithRecord()
+                                                    } else {
+                                                        vm.stopAllTracks()
+                                                    }
+                                                },
+                                                onMicRec = { isRecord ->
+                                                    if (isRecord) {
+                                                        showSliders = false
+                                                        vm.startDict()
+                                                    } else {
+                                                        showSliders = true
+                                                        vm.stopDict()
+                                                    }
+                                                },
+                                                onShare = {
+                                                    showDialog = true
+                                                }
+                                            )
+                                        }
                                     }
 
-                                    BoxWithConstraints(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(12.dp)
-                                    ) {
-                                        RecordBlock(
-                                            vm,
-                                            onExpand = {
-                                                showSliders = !it
-                                            },
-                                            onMuteLayerBtn = { layer, isMute ->
-                                                vm.muteLayer(layer, isMute)
-                                            },
-                                            onPlayLayerBtn = { layer, isPlay ->
-                                                vm.pausePlayLayer(layer, isPlay)
-                                            },
-                                            onDeleteLayer = {
-                                                vm.deleteLayer(it)
-                                            },
-                                            onSelectLayer = {
-                                                vm.selectLayer(it)
-                                            },
-                                            onPlayAll = { isRecord ->
-                                                showSliders = false
-                                                if (isRecord) {
-                                                    vm.playAllWithRecord()
-                                                } else {
-                                                    vm.playAllLayers()
-                                                }
-                                            },
-                                            onStopAll = { isRecord ->
-                                                showSliders = true
-                                                if (isRecord) {
-                                                    vm.stopAllWithRecord()
-                                                } else {
-                                                    vm.stopAllTracks()
-                                                }
-                                            },
-                                            onMicRec = { isRecord ->
-                                                if (isRecord) {
-                                                    showSliders = false
-                                                    vm.startDict()
-                                                } else {
-                                                    showSliders = true
-                                                    vm.stopDict()
-                                                }
-                                            },
-                                            onShare = {
-                                                showDialog = true
-                                            }
-                                        )
-                                    }
                                 }
 
                             }
-
-                        }
 
                     } else {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Text("Необходимо предоставить разрешения для работы приложения")
-                                Button(onClick = { recordAudioLauncher.launch(permissions) }) {
-                                    Text("Предоставить разрешения")
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Text("Необходимо предоставить разрешения для работы приложения")
+                                    Button(onClick = { recordAudioLauncher.launch(permissions) }) {
+                                        Text("Предоставить разрешения")
+                                    }
                                 }
                             }
                         }
-
                     }
                 }
             }

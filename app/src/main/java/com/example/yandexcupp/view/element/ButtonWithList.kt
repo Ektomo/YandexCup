@@ -1,6 +1,5 @@
 package com.example.yandexcupp.view.element
 
-import android.content.res.Configuration
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.updateTransition
@@ -9,9 +8,7 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
@@ -32,15 +29,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.yandexcupp.R
 import com.example.yandexcupp.data.Sample
-import com.example.yandexcupp.data.SampleEnum
-import com.example.yandexcupp.data.dataStore
 import com.example.yandexcupp.util.ysFontFamily
 import kotlinx.coroutines.delay
 
@@ -48,7 +41,6 @@ import kotlinx.coroutines.delay
 //val guitarLabels = listOf(GuitarSample.guitar1, GuitarSample.guitar2, GuitarSample.guitar3)
 //val drumLabels = listOf(DrumSample.drum1, DrumSample.drum2, DrumSample.drum3)
 //val fluteLabels = listOf(FluteSample.flute1, FluteSample.flute2, FluteSample.flute3)
-
 
 
 @Composable
@@ -80,8 +72,8 @@ fun RowScope.ButtonWithList(
         mutableStateOf(false)
     }
 
-    LaunchedEffect(key1 = showAnimate){
-        if (showAnimate){
+    LaunchedEffect(key1 = showAnimate) {
+        if (showAnimate) {
             isExpanded = true
             delay(500)
             isExpanded = false
@@ -130,19 +122,20 @@ fun RowScope.ButtonWithList(
                     val positionY = change.position.y
 
                     when {
-                        positionY <= size.width
+                        positionY <= (size.width- 20)
                             .toDp()
                             .toPx() -> {
                             selectedItemIndex = null
                         }
 
-                        positionY in size.width
+                        positionY in (size.width - 20)
                             .toDp()
                             .toPx()..(size.width.toDp() + 26.dp * labels.size).toPx() -> {
                             selectedItemIndex = ((positionY - (size.width)
                                 .toDp()
                                 .toPx()) / 26.dp.toPx()).toInt()
-                            onInput(labels[selectedItemIndex!!])
+                            if (selectedItemIndex in labels.indices)
+                                onInput(labels[selectedItemIndex!!])
                         }
 
                         else -> {
@@ -166,7 +159,9 @@ fun RowScope.ButtonWithList(
             Icon(
                 ImageVector.vectorResource(id = icon),
                 contentDescription = "",
-                modifier = Modifier.padding(top = 28.dp).sizeIn(minWidth = 44.dp)
+                modifier = Modifier
+                    .padding(top = 32.dp)
+                    .sizeIn(minWidth = 48.dp)
             )
             if (isExpanded) {
 
