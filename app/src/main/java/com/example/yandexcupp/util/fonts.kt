@@ -18,6 +18,10 @@ val montserratFontFamily = FontFamily(
     Font(R.font.montserrat_regular, FontWeight.Normal)
 )
 
+val interFontFamily = FontFamily(
+    Font(R.font.inter, FontWeight.Normal)
+)
+
 val ysFontFamily = FontFamily(
     Font(R.font.ys_text_regular, FontWeight.Normal)
 )

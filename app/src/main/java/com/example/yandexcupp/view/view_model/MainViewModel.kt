@@ -19,6 +19,7 @@ import com.example.yandexcupp.data.Sample
 import com.example.yandexcupp.data.SampleEnum
 import com.example.yandexcupp.data.SampleLayer
 import com.example.yandexcupp.data.dataStore
+import com.example.yandexcupp.player.AudioPlayer
 import com.example.yandexcupp.player.MultiTrackPlayer
 import com.example.yandexcupp.player.TrackPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,6 +31,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
+import java.util.Date
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 
 //
@@ -45,12 +48,18 @@ class MainViewModel @Inject constructor(
     val multiTrackPlayer: MultiTrackPlayer,
 ) : ViewModel() {
 
-    private val _state: MutableStateFlow<ViewStateClass<List<Sample>>> =
+    private val _state: MutableStateFlow<ViewStateClass<*>> =
         MutableStateFlow(ViewStateClass.Loading)
     val state = _state.asStateFlow()
+    var dateStartRec = Date().time
+    var dateFinishRec = Date().time
+    var timeRec = AtomicLong(0L)
+    var recTimerJob: Job? = null
+    var track: AudioPlayer? = null
 
     val layers = mutableStateListOf<Layer>()
     val curSample = MutableStateFlow<Sample?>(null)
+    val endTrack = MutableStateFlow(false)
     val curLayer = MutableStateFlow<Layer?>(null)
     val curRate = mutableFloatStateOf(1f)
     val curVolume = mutableFloatStateOf(0.5f)
@@ -85,11 +94,72 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    fun backFromVis() {
+        _state.update { ViewStateClass.Loading }
+         viewModelScope.launch(Dispatchers.IO) {
+            try {
+//                trackPlayer.loadAllTracks(dataStore)
+//                trackPlayer.loadingAllProcess.collect {
+//                    if (it.loading) {
+//                        _state.update { ViewStateClass.Loading }
+//                    } else {
+                        _state.update { ViewStateClass.Data(dataStore) }
+//                    }
+
+            } catch (e: Exception) {
+                _state.update { ViewStateClass.Error(e) }
+            }
+        }
+    }
+
+    fun loadAndPlayTrackFromFile(context: Context) {
+        _state.update { ViewStateClass.Loading }
+        viewModelScope.launch {
+
+            track = AudioPlayer(context)
+            track?.loadFromFile(finalTrack.value,{
+                endTrack.update { true }
+                _state.update { ViewStateClass.VideoPlayerState(finalTrack.value) }
+//                playAudioTrack()
+            }){
+
+            }
+        }
+    }
+
+    fun playAudioTrack(){
+        track?.play()
+    }
+
+    fun stopAudioTrack(){
+        track?.stop()
+    }
+
+    fun pauseAudioTrack(){
+        track?.pause()
+    }
+
+    fun goAudioTrackTo(time: Int){
+        track?.seekTo(time)
+    }
+
+    fun getDurationAudio() = track?.getDuration()
+    fun getCurrentPositionAudio() = track?.getPosition()
+
+    fun getToStart() = goAudioTrackTo(0)
+    fun goToEnd() {
+        val a = getDurationAudio()
+        a?.let{goAudioTrackTo(it)}
+    }
+    fun playTrackFromSoundPool() {
+
+    }
+
     private fun loadAllTrackMulti() {
         _state.update { ViewStateClass.Loading }
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                multiTrackPlayer.loadTracks(dataStore.map { it.id to it.path }){
+                multiTrackPlayer.loadTracks(dataStore.map { it.id to it.path }) {
                     _state.update { ViewStateClass.Data(dataStore) }
                 }
 //                multiTrackPlayer.loadingAllProcess.collect {
@@ -159,7 +229,7 @@ class MainViewModel @Inject constructor(
             findingLayer.isMute = isMute
         }
         trackPlayer.setVolume(layer.id, if (isMute) 0f else layer.volume)
-        reco.update { it+1}
+        reco.update { it + 1 }
     }
 
 
@@ -179,7 +249,7 @@ class MainViewModel @Inject constructor(
             layer.isPlay = true
             trackPlayer.playTrack(layer.id, if (layer.isMute) 0f else layer.volume, layer.rate)
         }
-        reco.update { it+1}
+        reco.update { it + 1 }
         trackPlayer.visualize { value ->
             _amplitude.update { value }
         }
@@ -207,7 +277,7 @@ class MainViewModel @Inject constructor(
         curSample.update { null }
         trackPlayer.stopAllTracks()
         layers.forEach { it.isPlay = false }
-        reco.update { it+1}
+        reco.update { it + 1 }
         trackPlayer.stopVisualise()
         _amplitude.update { 0f }
     }
@@ -235,11 +305,11 @@ class MainViewModel @Inject constructor(
             if (!isPlay) {
                 layer.isPlay = false
                 trackPlayer.stopTrack(layer.id)
-                reco.update { it+1}
+                reco.update { it + 1 }
             } else {
                 layer.isPlay = true
                 trackPlayer.playTrack(layer.id, if (layer.isMute) 0f else layer.volume, layer.rate)
-                reco.update { it+1}
+                reco.update { it + 1 }
 //                trackPlayer.visualize { value -> _amplitude.update { value } }
             }
         }
@@ -301,7 +371,7 @@ class MainViewModel @Inject constructor(
                     layers.add(newLayer)
                     newLayer.isPlay = true
                     curLayer.update { newLayer }
-                    reco.update { it+1}
+                    reco.update { it + 1 }
                     _state.update { ViewStateClass.Data(dataStore) }
                 }
 //                _amplitude.update { 0f }
@@ -319,10 +389,13 @@ class MainViewModel @Inject constructor(
         _amplitude.update { 0f }
     }
 
+
     fun playAllWithRecord() {
         playAllLayers()
+        dateStartRec = Date().time
         trackPlayer.startRecord(onStartSaving = {
             _state.update { ViewStateClass.Loading }
+
         }, { file ->
             FinalTrack.path = file.absolutePath
             finalTrack.update { file.absolutePath }

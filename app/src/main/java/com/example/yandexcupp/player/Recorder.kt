@@ -19,6 +19,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.Date
 import kotlin.math.abs
 
 class Recorder(private val context: Context) {
@@ -31,6 +32,7 @@ class Recorder(private val context: Context) {
         AudioFormat.CHANNEL_IN_STEREO,
         AudioFormat.ENCODING_PCM_16BIT
     )
+    private var startRecDate = Date().time
     val shortBuffer = ShortArray(bufferSize / 2)
     val byteBuffer = ByteBuffer.allocate(bufferSize)
 
@@ -58,6 +60,7 @@ class Recorder(private val context: Context) {
 
         recordingJob = CoroutineScope(Dispatchers.Default).launch {
             recorder?.startRecording()
+
             while (isActive) {
                 val readResult = recorder?.read(shortBuffer, 0, shortBuffer.size) ?: 0
                 if (readResult > 0) {

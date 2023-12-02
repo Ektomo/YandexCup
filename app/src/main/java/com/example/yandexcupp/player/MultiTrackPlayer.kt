@@ -74,6 +74,7 @@ class MultiTrackPlayer(val context: Context) {
         }
     }
 
+
     fun loadTrackFromFile(id: String, filePath: String, onComplete: () -> Unit) {
         val file = File(filePath)
         if (file.exists()) {
@@ -91,11 +92,12 @@ class MultiTrackPlayer(val context: Context) {
 //                .build()
 //
 //            audioTrack.write(audioData, 0, audioData.size)
-            val track = AudioPlayer(context)
-            track.loadFromFile(filePath){
-                tracks[id] = track
-                onComplete()
-            }
+//            val track = AudioPlayer(context)
+//            track.loadFromFile()
+//            track.loadFromFile(filePath){
+//                tracks[id] = track
+//                onComplete()
+//            }
 
         }
     }
@@ -149,10 +151,13 @@ class MultiTrackPlayer(val context: Context) {
         tracks[id]?.setPlaybackRate(rate)
     }
 
-    fun setInterval(id: String, rate: Long){
-        tracks[id]?.setRepeatInterval(rate)
-    }
+//    fun setInterval(id: String, rate: Long){
+//        tracks[id]?.setRepeatInterval(rate)
+//    }
 
+    fun loadFromFile(file: String){
+
+    }
 }
 
 //class LoopingAudioPlayer(private val audioData: ByteArray, audioAttributes: AudioAttributes) {

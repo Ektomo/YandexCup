@@ -44,6 +44,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.yandexcupp.ui.theme.YandexCupPTheme
 import com.example.yandexcupp.util.ysFontFamily
+import com.example.yandexcupp.view.VideoPlayer
 import com.example.yandexcupp.view.block.RecordBlock
 import com.example.yandexcupp.view.block.RowButtons
 import com.example.yandexcupp.view.element.CustomHorizontalSlider
@@ -64,6 +65,7 @@ class MainActivity : ComponentActivity() {
         setContent {
 
             var allPermissionsGranted by remember { mutableStateOf(false) }
+
 
             val recordAudioLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -88,14 +90,13 @@ class MainActivity : ComponentActivity() {
             val state by vm.state.collectAsState()
 
 
-            val gradient =
-                Brush.verticalGradient(
-                    listOf(
-                        Color.Black,
-                        Color(0xFF5A50E1),
+            val gradient = Brush.verticalGradient(
+                listOf(
+                    Color.Black,
+                    Color(0xFF5A50E1),
 
-                        ),
-                )
+                    ),
+            )
 
 //            val currentSample: Sample? by vm.curSample.collectAsState()
             val curRate by remember {
@@ -132,14 +133,16 @@ class MainActivity : ComponentActivity() {
             YandexCupPTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
                 ) {
-                    Crossfade (allPermissionsGranted, label = "") {
+                    Crossfade(allPermissionsGranted, label = "") {
                         if (it) {
                             if (showDialog) {
-                                DialogYourChoice(
-                                    onDismissRequest = { showDialog = false },
+                                DialogYourChoice(onDismissRequest = { showDialog = false },
+                                    onVisualize = {
+                                        showDialog = false
+                                        vm.loadAndPlayTrackFromFile(context)
+                                    },
                                     onShare = {
                                         showDialog = false
                                         vm.shareFile(context)
@@ -167,6 +170,10 @@ class MainActivity : ComponentActivity() {
                                         Text(text = curSt.e.message ?: "Неизвестная ошибка")
                                     }
 
+                                    is ViewStateClass.VideoPlayerState -> {
+                                        VideoPlayer(curSt.data, vm)
+                                    }
+
                                     is ViewStateClass.Data -> {
                                         Column(
                                             modifier = Modifier
@@ -187,8 +194,7 @@ class MainActivity : ComponentActivity() {
                                                     CustomVerticalSlider(
                                                         modifier = Modifier
                                                             .fillMaxHeight()
-                                                            .padding(vertical = 12.dp),
-                                                        curVolume
+                                                            .padding(vertical = 12.dp), curVolume
                                                     ) { value ->
                                                         vm.setVolume(value)
 
@@ -210,7 +216,8 @@ class MainActivity : ComponentActivity() {
                                             RowButtons(modifier = Modifier.fillMaxWidth(),
                                                 onEnd = { sample ->
                                                     vm.onEnd(sample)
-                                                }, onInput = { sample ->
+                                                },
+                                                onInput = { sample ->
                                                     vm.onInput(sample)
                                                 })
                                         }
@@ -220,52 +227,41 @@ class MainActivity : ComponentActivity() {
                                                 .fillMaxSize()
                                                 .padding(12.dp)
                                         ) {
-                                            RecordBlock(
-                                                vm,
-                                                onExpand = {
-                                                    showSliders = !it
-                                                },
-                                                onMuteLayerBtn = { layer, isMute ->
-                                                    vm.muteLayer(layer, isMute)
-                                                },
-                                                onPlayLayerBtn = { layer, isPlay ->
-                                                    vm.pausePlayLayer(layer, isPlay)
-                                                },
-                                                onDeleteLayer = {
-                                                    vm.deleteLayer(it)
-                                                },
-                                                onSelectLayer = {
-                                                    vm.selectLayer(it)
-                                                },
-                                                onPlayAll = { isRecord ->
-                                                    showSliders = false
-                                                    if (isRecord) {
-                                                        vm.playAllWithRecord()
-                                                    } else {
-                                                        vm.playAllLayers()
-                                                    }
-                                                },
-                                                onStopAll = { isRecord ->
-                                                    showSliders = true
-                                                    if (isRecord) {
-                                                        vm.stopAllWithRecord()
-                                                    } else {
-                                                        vm.stopAllTracks()
-                                                    }
-                                                },
-                                                onMicRec = { isRecord ->
-                                                    if (isRecord) {
-                                                        showSliders = false
-                                                        vm.startDict()
-                                                    } else {
-                                                        showSliders = true
-                                                        vm.stopDict()
-                                                    }
-                                                },
-                                                onShare = {
-                                                    showDialog = true
+                                            RecordBlock(vm, onExpand = {
+                                                showSliders = !it
+                                            }, onMuteLayerBtn = { layer, isMute ->
+                                                vm.muteLayer(layer, isMute)
+                                            }, onPlayLayerBtn = { layer, isPlay ->
+                                                vm.pausePlayLayer(layer, isPlay)
+                                            }, onDeleteLayer = {
+                                                vm.deleteLayer(it)
+                                            }, onSelectLayer = {
+                                                vm.selectLayer(it)
+                                            }, onPlayAll = { isRecord ->
+                                                showSliders = false
+                                                if (isRecord) {
+                                                    vm.playAllWithRecord()
+                                                } else {
+                                                    vm.playAllLayers()
                                                 }
-                                            )
+                                            }, onStopAll = { isRecord ->
+                                                showSliders = true
+                                                if (isRecord) {
+                                                    vm.stopAllWithRecord()
+                                                } else {
+                                                    vm.stopAllTracks()
+                                                }
+                                            }, onMicRec = { isRecord ->
+                                                if (isRecord) {
+                                                    showSliders = false
+                                                    vm.startDict()
+                                                } else {
+                                                    showSliders = true
+                                                    vm.stopDict()
+                                                }
+                                            }, onShare = {
+                                                showDialog = true
+                                            })
                                         }
                                     }
 
@@ -273,7 +269,7 @@ class MainActivity : ComponentActivity() {
 
                             }
 
-                    } else {
+                        } else {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
@@ -304,6 +300,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun DialogYourChoice(
     onDismissRequest: () -> Unit,
+    onVisualize: () -> Unit,
     onShare: () -> Unit,
     onSave: () -> Unit,
     onDelete: () -> Unit,
@@ -326,10 +323,19 @@ fun DialogYourChoice(
 
             Divider()
 
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 2.dp),
+            Button(modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 2.dp),
+                onClick = { onVisualize() }) {
+                Text(
+                    text = "Визуализировать",
+                    fontFamily = ysFontFamily,
+                )
+            }
+
+            Button(modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 2.dp),
                 onClick = { onShare() }) {
                 Text(
                     text = "Поделиться",
@@ -349,8 +355,7 @@ fun DialogYourChoice(
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 2.dp),
-                onClick = onDelete
+                    .padding(vertical = 2.dp), onClick = onDelete
             ) {
                 Text(
                     text = "Удалить",
@@ -360,8 +365,7 @@ fun DialogYourChoice(
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 2.dp),
-                onClick = onCancel
+                    .padding(vertical = 2.dp), onClick = onCancel
             ) {
                 Text(
                     text = "Отмена",
@@ -372,5 +376,9 @@ fun DialogYourChoice(
     }
 }
 
+
+enum class MainViewState {
+    Main, Video
+}
 
 

@@ -1,6 +1,7 @@
 package com.example.lct2023.di
 
 import android.content.Context
+import com.example.yandexcupp.player.AudioPlayer
 import com.example.yandexcupp.player.MultiTrackPlayer
 import com.example.yandexcupp.player.Recorder
 import com.example.yandexcupp.player.TrackPlayer
@@ -42,5 +43,11 @@ object AppModule {
     fun provideRecorder(
         @ApplicationContext app: Context
     ): Recorder = Recorder(app)
+
+//    @Singleton
+//    @Provides
+//    fun provideAudioPlayer(
+//        @ApplicationContext app: Context
+//    ): AudioPlayer = AudioPlayer(app)
 
 }
